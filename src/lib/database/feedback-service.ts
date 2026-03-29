@@ -1,39 +1,48 @@
-// 暂时注释掉数据库调用，避免类型错误
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs/promises';
+import path from 'path';
 
-export async function saveFeedback(feedback: any): Promise<string> {
-  // const db = await connectToDatabase();
-  // const collection = db.collection<UserFeedback>('feedback');
+// 确保反馈目录存在
+const FEEDBACK_DIR = path.join(process.cwd(), 'data', 'feedback');
+await fs.mkdir(FEEDBACK_DIR, { recursive: true });
+
+export async function saveFeedback(feedbackData: any): Promise<string> {
+  const feedbackId = uuidv4();
+  const feedback = {
+    id: feedbackId,
+    ...feedbackData,
+    createdAt: new Date().toISOString()
+  };
   
-  // const result = await collection.insertOne({
-  //   ...feedback,
-  //   createdAt: new Date(),
-  //   processed: false
-  // });
+  const filePath = path.join(FEEDBACK_DIR, `${feedbackId}.json`);
+  await fs.writeFile(filePath, JSON.stringify(feedback, null, 2));
   
-  // return result.insertedId.toString();
-  console.log('保存反馈:', feedback);
-  return 'mock-id';
+  // 发送邮件通知（如果配置了邮件服务）
+  try {
+    const { sendEmail } = await import('../email-service');
+    await sendEmail({
+      to: 'jx_zfl@126.com',
+      subject: `新反馈提交 - ${feedbackId}`,
+      text: `新反馈内容：${feedbackData.feedback}\n邮箱：${feedbackData.email || '未提供'}\n时间：${feedback.createdAt}`
+    });
+  } catch (emailError) {
+    console.warn('邮件发送失败，但反馈已保存:', emailError);
+  }
+  
+  return feedbackId;
 }
 
-export async function getUnprocessedFeedback(limit: number = 50): Promise<any[]> {
-  // const db = await connectToDatabase();
-  // const collection = db.collection<UserFeedback>('feedback');
+export async function getUnprocessedFeedback(): Promise<any[]> {
+  const files = await fs.readdir(FEEDBACK_DIR);
+  const feedbacks = [];
   
-  // return await collection
-  //   .find({ processed: false })
-  //   .sort({ createdAt: -1 })
-  //   .limit(limit)
-  //   .toArray();
-  return [];
-}
-
-export async function markFeedbackAsProcessed(feedbackId: string): Promise<void> {
-  // const db = await connectToDatabase();
-  // const collection = db.collection<UserFeedback>('feedback');
+  for (const file of files) {
+    if (file.endsWith('.json')) {
+      const filePath = path.join(FEEDBACK_DIR, file);
+      const content = await fs.readFile(filePath, 'utf-8');
+      feedbacks.push(JSON.parse(content));
+    }
+  }
   
-  // await collection.updateOne(
-  //   { _id: feedbackId },
-  //   { $set: { processed: true } }
-  // );
-  console.log('标记反馈为已处理:', feedbackId);
+  return feedbacks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }

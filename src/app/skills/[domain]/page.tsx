@@ -30,7 +30,7 @@ export default function SkillCategoryPage({ params }: { params: { domain: string
           {categoryData.skills.map((skill, index) => (
             <div key={index} className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start mb-3">
-                <h3 className="font-semibold text-base sm:text-lg">{skill.name}</h3>
+                <h3 className="font-semibold text-base sm:text-lg">{skill.title}</h3>
                 <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                   skill.level === '入门' ? 'bg-green-100 text-green-800' :
                   skill.level === '进阶' ? 'bg-blue-100 text-blue-800' :
@@ -45,11 +45,12 @@ export default function SkillCategoryPage({ params }: { params: { domain: string
                 <div className="mt-4">
                   <h4 className="text-xs font-medium text-gray-500 mb-2">学习资源</h4>
                   <ul className="space-y-1">
-                    {skill.resources.map((resource: string, idx: number) => (
+                    {skill.resources.map((resource, idx) => (
                       <li key={idx} className="text-sm">
-                        <Link href={resource} className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">
-                          资源 {idx + 1}
+                        <Link href={resource.url} className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">
+                          {resource.title}
                         </Link>
+                        <span className="text-xs text-gray-500 ml-2">({resource.source})</span>
                       </li>
                     ))}
                   </ul>
