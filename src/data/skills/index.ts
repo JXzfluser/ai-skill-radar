@@ -1,5 +1,5 @@
 import { promptEngineeringSkills } from './prompt-engineering';
-import { loraFinetuningSkills } from './lora-finetuning';
+import { loraSkills } from './lora-finetuning';
 import { ragDevelopmentSkills } from './rag-development';
 import { Skill } from '../types';
 
@@ -21,7 +21,7 @@ export const SKILL_CATEGORIES: Record<string, SkillCategoryData> = {
     title: 'LoRA 微调',
     description: '学习低秩适应微调技术，高效定制大语言模型以满足特定需求。',
     overview: 'LoRA（Low-Rank Adaptation）是一种高效的参数微调方法，通过低秩矩阵分解大幅减少可训练参数数量。',
-    skills: loraFinetuningSkills,
+    skills: loraSkills,
   },
   'rag-development': {
     title: 'RAG 开发',
@@ -31,12 +31,6 @@ export const SKILL_CATEGORIES: Record<string, SkillCategoryData> = {
   }
 };
 
-export const ALL_SKILLS: Skill[] = [
-  ...promptEngineeringSkills,
-  ...loraFinetuningSkills,
-  ...ragDevelopmentSkills
-];
-
-export function getSkillCategoryData(domain: string): SkillCategoryData | null {
-  return SKILL_CATEGORIES[domain] || null;
+export function getSkillCategoryData(domain: string) {
+  return SKILL_CATEGORIES[domain as keyof typeof SKILL_CATEGORIES] || null;
 }

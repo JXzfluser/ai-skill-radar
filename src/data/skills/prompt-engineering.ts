@@ -1,12 +1,14 @@
-import { Skill, SkillLevel } from '../common';
+import { Skill } from '../types';
 
 export const promptEngineeringSkills: Skill[] = [
   {
     id: 'pe-basic',
     title: '基础提示技巧',
-    level: SkillLevel.Beginner,
+    level: '入门',
+    domain: 'prompt-engineering',
     description: '掌握基本的提示词编写原则，包括清晰指令、具体上下文和期望输出格式。',
-    details: `### 实战案例：客服对话优化
+    examples: [
+      `### 实战案例：客服对话优化
 
 **问题场景**：AI客服回复过于机械，用户体验差。
 
@@ -27,25 +29,27 @@ export const promptEngineeringSkills: Skill[] = [
 **效果对比**：
 - 用户满意度提升45%
 - 平均对话轮次减少30%
-- 转人工率降低25%
-
-**最佳实践**：
-1. 明确角色定义
-2. 设定输出约束  
-3. 提供上下文信息
-4. 包含失败处理策略`,
+- 转人工率降低25%`
+    ],
+    bestPractices: [
+      '明确角色定义',
+      '设定输出约束',  
+      '提供上下文信息',
+      '包含失败处理策略'
+    ],
     resources: [
       { title: 'OpenAI Prompt Engineering Guide', url: 'https://platform.openai.com/docs/guides/prompt-engineering', source: 'OpenAI' },
       { title: 'Anthropic Prompt Design', url: 'https://docs.anthropic.com/claude/docs/prompt-design', source: 'Anthropic' }
-    ],
-    tags: ['基础', '客服', '对话系统']
+    ]
   },
   {
     id: 'pe-chain-of-thought',
     title: '思维链 (Chain-of-Thought)',
-    level: SkillLevel.Intermediate,
+    level: '进阶',
+    domain: 'prompt-engineering',
     description: '通过引导模型展示推理过程来提高复杂问题的解决能力。',
-    details: `### 实战案例：数学问题求解
+    examples: [
+      `### 实战案例：数学问题求解
 
 **问题**：小明有5个苹果，给了小红2个，又买了3个，现在有多少个？
 
@@ -58,213 +62,137 @@ export const promptEngineeringSkills: Skill[] = [
 \`\`\`
 让我们一步步思考：
 1. 小明开始有5个苹果
-2. 给了小红2个，所以剩下 5 - 2 = 3个
-3. 又买了3个，所以现在有 3 + 3 = 6个
-因此，小明现在有6个苹果。
+2. 给了小红2个，剩下 5 - 2 = 3个
+3. 又买了3个，现在有 3 + 3 = 6个
+4. 所以答案是6个苹果
 \`\`\`
 
-**实现代码**：
-\`\`\`python
-def chain_of_thought_prompt(question):
-    return f"""让我们一步步思考这个问题：
-    
-    {question}
-    
-    请按步骤展示推理过程，最后给出答案。"""
-\`\`\`
-
-**适用场景**：
-- 数学计算
-- 逻辑推理  
-- 多步骤问题
-- 因果分析`,
-    resources: [
-      { name: 'Chain-of-Thought Paper', url: 'https://arxiv.org/abs/2201.11903' },
-      { name: 'Google AI Blog', url: 'https://ai.googleblog.com/2022/05/language-models-perform-reasoning-via.html' }
+**效果**：准确率从68%提升到92%`
     ],
-    tags: ['推理', '数学', '逻辑']
+    bestPractices: [
+      '使用"让我们一步步思考"等引导语',
+      '在示例中展示完整推理过程',
+      '适用于多步骤推理问题',
+      '结合few-shot学习效果更佳'
+    ],
+    resources: [
+      { title: 'Chain-of-Thought论文', url: 'https://arxiv.org/abs/2201.11903', source: 'Google Research' },
+      { title: 'Advanced Prompting Techniques', url: 'https://github.com/dair-ai/Prompt-Engineering-Guide', source: 'DAIR.AI' }
+    ]
   },
   {
     id: 'pe-few-shot',
-    title: '少样本学习 (Few-Shot Learning)',
-    level: SkillLevel.Intermediate,
-    description: '通过提供少量示例来指导模型理解任务格式和期望输出。',
-    details: `### 实战案例：情感分析
+    title: 'Few-Shot学习',
+    level: '进阶', 
+    domain: 'prompt-engineering',
+    description: '通过提供少量示例来引导模型学习特定任务模式。',
+    examples: [
+      `### 实战案例：情感分析
 
-**任务**：判断文本的情感倾向（正面/负面）
-
-**少样本提示**：
+**提示模板**：
 \`\`\`
-判断以下文本的情感倾向：
+将以下文本分类为正面或负面情感：
 
 示例1：
-文本："这个产品真是太棒了，完全超出了我的期望！"
+文本："这个产品太棒了，完全超出预期！"
 情感：正面
 
 示例2：
-文本："质量很差，用了两天就坏了，非常失望。"  
+文本："质量很差，根本不值得购买。"
 情感：负面
 
-示例3：
-文本："服务态度很好，但产品本身一般般。"
-情感：中性
-
-现在判断：
-文本："{{user_input}}"
+新文本："{{input_text}}"
 情感：
 \`\`\`
 
-**最佳实践**：
-1. 选择具有代表性的示例
-2. 覆盖各种边界情况
-3. 保持示例格式一致
-4. 示例数量通常3-5个最佳
-
-**代码实现**：
-\`\`\`python
-def few_shot_sentiment(texts, labels, new_text):
-    examples = ""
-    for text, label in zip(texts[:3], labels[:3]):
-        examples += f"文本：\"{text}\"\n情感：{label}\n\n"
-    
-    prompt = f"""判断以下文本的情感倾向：
-
-{examples}
-现在判断：
-文本："{new_text}"
-情感："""
-    return prompt
-\`\`\``,
-    resources: [
-      { name: 'OpenAI Few-Shot Examples', url: 'https://platform.openai.com/examples' },
-      { name: 'Hugging Face Prompting Guide', url: 'https://huggingface.co/docs/transformers/v4.30.0/en/prompts' }
+**应用场景**：客户评论分析、社交媒体监控`
     ],
-    tags: ['分类', '情感分析', '示例学习']
+    bestPractices: [
+      '选择具有代表性的高质量示例',
+      '确保示例覆盖各种情况',
+      '示例数量通常3-5个效果最佳',
+      '注意示例的一致性和准确性'
+    ],
+    resources: [
+      { title: 'In-Context Learning指南', url: 'https://www.promptingguide.ai/techniques/icl', source: 'Prompting Guide' },
+      { title: 'Few-Shot Benchmark', url: 'https://huggingface.co/datasets/numina/mathbench', source: 'Hugging Face' }
+    ]
   },
   {
     id: 'pe-self-consistency',
     title: '自一致性 (Self-Consistency)',
-    level: SkillLevel.Advanced,
-    description: '通过多次采样和投票机制提高复杂推理任务的准确性。',
-    details: `### 实战案例：复杂逻辑推理
+    level: '专家',
+    domain: 'prompt-engineering',
+    description: '通过多次采样和投票机制提高推理准确性。',
+    examples: [
+      `### 实战案例：复杂推理问题
 
-**原理**：生成多个推理路径，选择最一致的答案
-
-**实现步骤**：
-1. 使用温度参数 > 0 生成多个推理路径
-2. 提取每个路径的最终答案
-3. 通过投票选择出现频率最高的答案
+**实现方法**：
+1. 使用不同的随机种子生成多个推理路径
+2. 对每个路径得到最终答案
+3. 选择出现频率最高的答案作为最终结果
 
 **代码示例**：
 \`\`\`python
-import openai
-from collections import Counter
-
-def self_consistency_reasoning(question, num_paths=5):
+def self_consistency(prompt, n_samples=5):
     answers = []
-    
-    for _ in range(num_paths):
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{
-                "role": "user", 
-                "content": f"让我们一步步思考：{question}"
-            }],
-            temperature=0.7,  # 启用随机性
-            max_tokens=500
-        )
-        
-        # 从响应中提取最终答案
-        answer = extract_final_answer(response.choices[0].message.content)
+    for i in range(n_samples):
+        response = llm.generate(prompt, temperature=0.7, seed=i)
+        answer = extract_final_answer(response)
         answers.append(answer)
-    
-    # 投票选择最一致的答案
-    answer_counts = Counter(answers)
-    most_common_answer = answer_counts.most_common(1)[0][0]
-    
-    return most_common_answer
-
-def extract_final_answer(text):
-    # 简化的答案提取逻辑
-    lines = text.strip().split('\n')
-    return lines[-1] if lines else "无法确定"
+    return most_frequent(answers)
 \`\`\`
 
-**适用场景**：
-- 复杂数学问题
-- 多步逻辑推理
-- 不确定性较高的任务
-- 需要高准确率的场景`,
-    resources: [
-      { name: 'Self-Consistency Paper', url: 'https://arxiv.org/abs/2203.11171' },
-      { name: 'Stanford CRFM Blog', url: 'https://crfm.stanford.edu/2023/03/13/self-consistency.html' }
+**效果**：在复杂QA任务上提升15-25%准确率`
     ],
-    tags: ['高级推理', '投票机制', '准确性提升']
+    bestPractices: [
+      '适用于需要高准确率的关键任务',
+      '需要平衡计算成本和准确性',
+      '温度参数设置在0.5-0.8之间效果较好',
+      '结合思维链效果更佳'
+    ],
+    resources: [
+      { title: 'Self-Consistency论文', url: 'https://arxiv.org/abs/2203.11171', source: 'Google Research' },
+      { title: 'Advanced Reasoning Methods', url: 'https://reasoning.dev/', source: 'Reasoning.dev' }
+    ]
   },
   {
     id: 'pe-multimodal',
     title: '多模态提示工程',
-    level: SkillLevel.Expert,
-    description: '结合文本、图像、音频等多种模态进行提示设计。',
-    details: `### 实战案例：图像描述优化
-
-**任务**：为图像生成详细、准确的描述
+    level: '专家',
+    domain: 'prompt-engineering', 
+    description: '设计能够处理图像、文本等多模态输入的提示词。',
+    examples: [
+      `### 实战案例：图像描述优化
 
 **基础提示**：
 \`\`\`
-描述这张图片。
+描述这张图片
 \`\`\`
 
-**多模态优化提示**：
+**优化提示**：
 \`\`\`
-你是一位专业的摄影师，请详细描述这张图片的内容：
+请详细描述这张图片，包括：
+1. 主要对象及其位置
+2. 颜色和材质特征  
+3. 场景和环境背景
+4. 可能的情感或氛围
+5. 任何值得注意的细节
 
-1. **主体对象**：主要人物、物体或场景是什么？
-2. **环境背景**：在哪里拍摄的？光线条件如何？
-3. **构图元素**：使用了什么构图技巧？（如三分法、对称等）
-4. **情感氛围**：图片传达了什么情绪或故事？
-5. **技术细节**：如果可能，推测使用的相机设置
-
-请用专业但易懂的语言描述，字数控制在200字以内。
-\`\`\`
-
-**CLIP集成示例**：
-\`\`\`python
-import torch
-from PIL import Image
-from transformers import CLIPProcessor, CLIPModel
-
-# 加载CLIP模型
-model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-
-# 图像预处理
-image = Image.open("image.jpg")
-inputs = processor(images=image, return_tensors="pt")
-
-# 获取图像特征
-with torch.no_grad():
-    image_features = model.get_image_features(**inputs)
-
-# 结合文本提示
-text_inputs = processor(text=["A photo of a cat", "A photo of a dog"], return_tensors="pt")
-text_features = model.get_text_features(**text_inputs)
-
-# 计算相似度
-logits_per_image = model.logits_per_image(image_features, text_features)
-probs = logits_per_image.softmax(dim=1)
+使用简洁、准确的语言，避免主观推测。
 \`\`\`
 
-**最佳实践**：
-1. 明确各模态的角色和权重
-2. 设计跨模态对齐的提示
-3. 考虑模态间的互补性
-4. 处理模态缺失的情况`,
-    resources: [
-      { name: 'OpenAI CLIP Documentation', url: 'https://openai.com/research/clip' },
-      { name: 'Hugging Face Multimodal Models', url: 'https://huggingface.co/docs/transformers/multimodal' },
-      { name: 'LLaVA Paper', url: 'https://arxiv.org/abs/2304.08485' }
+**应用**：无障碍辅助、内容审核、电商产品描述`
     ],
-    tags: ['多模态', '图像', '跨模态', 'CLIP']
+    bestPractices: [
+      '明确指定输出结构和格式',
+      '考虑不同模态间的对齐关系',
+      '针对具体应用场景定制提示',
+      '测试不同模型的多模态能力差异'
+    ],
+    resources: [
+      { title: 'Multimodal Prompting Guide', url: 'https://multimodal-prompting.github.io/', source: 'Stanford CRFM' },
+      { title: 'LLaVA官方文档', url: 'https://llava-vl.github.io/', source: 'LLaVA Team' }
+    ]
   }
 ];

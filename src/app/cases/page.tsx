@@ -1,63 +1,95 @@
+'use client';
+
 import React from 'react';
+import { Skill } from '../../data/types';
+import { promptEngineeringSkills } from '../../data/skills/prompt-engineering';
+import { loraSkills } from '../../data/skills/lora-finetuning';
+import { ragDevelopmentSkills } from '../../data/skills/rag-development';
 
-export default function CasesPage() {
+interface CaseItem {
+  title: string;
+  description: string;
+  examples: string[];
+  domain: string;
+}
+
+const CasesPage = () => {
+  // 合并所有技能的实战案例，过滤掉没有examples的项目
+  const allCases: CaseItem[] = [
+    ...promptEngineeringSkills
+      .filter(skill => skill.examples && skill.examples.length > 0)
+      .map(skill => ({
+        title: skill.title,
+        description: skill.description,
+        examples: skill.examples || [],
+        domain: '提示词工程'
+      })),
+    ...loraSkills
+      .filter(skill => skill.examples && skill.examples.length > 0)
+      .map(skill => ({
+        title: skill.title,
+        description: skill.description,
+        examples: skill.examples || [],
+        domain: 'LoRA微调'
+      })),
+    ...ragDevelopmentSkills
+      .filter(skill => skill.examples && skill.examples.length > 0)
+      .map(skill => ({
+        title: skill.title,
+        description: skill.description,
+        examples: skill.examples || [],
+        domain: 'RAG开发'
+      }))
+  ];
+
   return (
-    <div className="min-h-screen p-8">
-      <h1 className="text-3xl font-bold mb-8">实战案例库</h1>
-      
-      <div className="space-y-6">
-        <div className="border rounded-lg p-6">
-          <h2 className="text-2xl font-semibold mb-4">提示词工程实战案例</h2>
-          <div className="prose max-w-none">
-            <p className="mb-4">这是一个完整的提示词工程实战案例，展示了如何从零开始构建一个高效的提示词系统。</p>
-            
-            <h3 className="text-xl font-medium mb-3">步骤1: 需求分析</h3>
-            <p className="mb-4">首先明确业务需求和目标用户，确定提示词的应用场景。</p>
-            
-            <h3 className="text-xl font-medium mb-3">步骤2: 提示词设计</h3>
-            <p className="mb-4">根据需求设计基础提示词模板，考虑各种边界情况。</p>
-            
-            <h3 className="text-xl font-medium mb-3">步骤3: 代码实现</h3>
-            <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto mb-4">
-              <code>{`// 示例代码
-const promptTemplate = \`
-你是一个专业的{role}，请根据以下要求完成任务：
-1. {requirement_1}
-2. {requirement_2}
-3. 输出格式：{output_format}
-\`;
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">实战案例库</h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            精选来自提示词工程、LoRA微调和RAG开发三大领域的完整实战案例，
+            包含详细代码示例、最佳实践和效果对比。
+          </p>
+        </div>
 
-function generatePrompt(role, requirements, outputFormat) {
-  return promptTemplate
-    .replace('{role}', role)
-    .replace('{requirement_1}', requirements[0])
-    .replace('{requirement_2}', requirements[1])
-    .replace('{output_format}', outputFormat);
-}`}</code>
-            </pre>
-            
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
-              一键复制代码
-            </button>
-          </div>
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {allCases.map((item, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="inline-block px-3 py-1 text-xs font-semibold text-blue-600 bg-blue-100 rounded-full">
+                    {item.domain}
+                  </span>
+                </div>
+                
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                <p className="text-gray-600 mb-4">{item.description}</p>
+                
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">实战示例：</h4>
+                  {item.examples.map((example, exampleIndex) => (
+                    <div key={exampleIndex} className="mb-4 last:mb-0">
+                      <div 
+                        className="prose prose-sm max-w-none text-gray-700"
+                        dangerouslySetInnerHTML={{ __html: example.replace(/\n/g, '<br/>') }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-        
-        <div className="border rounded-lg p-6">
-          <h2 className="text-2xl font-semibold mb-4">LoRA微调完整流程</h2>
-          <div className="prose max-w-none">
-            <p className="mb-4">详细的LoRA微调步骤，包含数据准备、模型配置、训练和评估全过程。</p>
-            {/* 更多案例内容 */}
+
+        {allCases.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">暂无实战案例数据</p>
           </div>
-        </div>
-        
-        <div className="border rounded-lg p-6">
-          <h2 className="text-2xl font-semibold mb-4">RAG系统开发指南</h2>
-          <div className="prose max-w-none">
-            <p className="mb-4">构建检索增强生成系统的完整教程，从向量数据库到推理优化。</p>
-            {/* 更多案例内容 */}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default CasesPage;

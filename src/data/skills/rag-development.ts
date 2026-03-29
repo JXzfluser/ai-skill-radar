@@ -1,14 +1,14 @@
-import { Skill, SkillLevel } from '../common';
+import { Skill } from '../types';
 
 export const ragDevelopmentSkills: Skill[] = [
   {
     id: 'vector-databases',
     title: '向量数据库实战',
-    level: SkillLevel.Beginner,
+    level: '入门',
+    domain: 'rag-development',
     description: '掌握主流向量数据库（Pinecone、Chroma、Weaviate）的使用方法，包括索引创建、向量存储、相似度搜索等核心功能。',
-    details: `## 向量数据库实战指南
-
-### Pinecone 实战示例
+    examples: [
+      `### Pinecone 实战示例
 
 **1. 环境配置**
 \`\`\`bash
@@ -46,54 +46,51 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 
 # 初始化客户端
-client = chromadb.PersistentClient(path="./chroma_db")
-collection = client.create_collection("ai_skills")
+client = chromadb.Client()
+collection = client.create_collection("my_documents")
 
-# 文本嵌入和存储
+# 添加文档
+documents = ["机器学习是人工智能的子领域", "深度学习使用神经网络"]
 model = SentenceTransformer('all-MiniLM-L6-v2')
-documents = [
-    "RAG系统结合检索和生成，提供准确回答",
-    "向量数据库支持高效的相似度搜索"
-]
 embeddings = model.encode(documents).tolist()
 
 collection.add(
-    documents=documents,
     embeddings=embeddings,
+    documents=documents,
     ids=["doc1", "doc2"]
 )
 
 # 查询
-query_embedding = model.encode(["如何构建RAG系统？"]).tolist()
+query_embedding = model.encode(["AI技术"]).tolist()
 results = collection.query(
-    query_embeddings=query_embedding,
+    query_embeddings=[query_embedding],
     n_results=2
 )
 print(results)
-\`\`\`
-
-**最佳实践**：
-1. 选择合适的嵌入模型（如text-embedding-ada-002）
-2. 配置合适的索引参数（维度、距离度量）
-3. 实现缓存机制减少重复计算
-4. 监控查询性能和准确性`,
-    resources: [
-      { name: 'Pinecone Documentation', url: 'https://docs.pinecone.io/' },
-      { name: 'Chroma Documentation', url: 'https://docs.trychroma.com/' },
-      { name: 'Weaviate Documentation', url: 'https://weaviate.io/developers/weaviate' }
+\`\`\``
     ],
-    tags: ['向量数据库', 'Pinecone', 'Chroma', 'Weaviate']
+    bestPractices: [
+      "选择合适的嵌入模型：根据应用场景选择sentence-transformers或OpenAI embeddings",
+      "索引优化：合理设置索引参数以平衡查询速度和准确性",
+      "数据预处理：清洗和标准化文本数据以提高检索质量",
+      "监控和维护：定期更新向量索引并监控性能指标"
+    ],
+    resources: [
+      { title: 'Pinecone官方文档', url: 'https://docs.pinecone.io/', source: 'Pinecone' },
+      { title: 'Chroma官方文档', url: 'https://docs.trychroma.com/', source: 'Chroma' },
+      { title: 'Weaviate官方文档', url: 'https://weaviate.io/developers/weaviate', source: 'Weaviate' }
+    ]
   },
   {
     id: 'retrieval-strategies',
     title: '检索策略优化',
-    level: SkillLevel.Intermediate,
-    description: '掌握多种检索策略，包括BM25、稠密检索、混合检索等，提升RAG系统的召回率和准确率。',
-    details: `## 检索策略优化实战
+    level: '进阶',
+    domain: 'rag-development',
+    description: '掌握多种检索策略，包括混合检索、重排序、查询扩展等高级技术，提升RAG系统的召回率和准确率。',
+    examples: [
+      `### 混合检索实现
 
-### BM25 + 稠密检索混合策略
-
-**实现代码**：
+**结合关键词和向量检索**
 \`\`\`python
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
@@ -102,30 +99,24 @@ import numpy as np
 class HybridRetriever:
     def __init__(self, documents):
         self.documents = documents
-        
-        # BM25初始化
-        tokenized_docs = [doc.split() for doc in documents]
-        self.bm25 = BM25Okapi(tokenized_docs)
-        
-        # 稠密检索初始化
+        self.bm25 = BM25Okapi([doc.split() for doc in documents])
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.doc_embeddings = self.embedding_model.encode(documents)
     
     def retrieve(self, query, top_k=5, alpha=0.5):
         # BM25分数
-        tokenized_query = query.split()
-        bm25_scores = self.bm25.get_scores(tokenized_query)
+        bm25_scores = self.bm25.get_scores(query.split())
         
-        # 稠密检索分数
+        # 向量相似度分数
         query_embedding = self.embedding_model.encode([query])
-        dense_scores = np.dot(self.doc_embeddings, query_embedding.T).flatten()
+        vector_scores = np.dot(self.doc_embeddings, query_embedding.T).flatten()
         
         # 归一化分数
-        bm25_norm = bm25_scores / (np.max(bm25_scores) + 1e-8)
-        dense_norm = dense_scores / (np.max(dense_scores) + 1e-8)
+        bm25_norm = (bm25_scores - bm25_scores.min()) / (bm25_scores.max() - bm25_scores.min() + 1e-8)
+        vector_norm = (vector_scores - vector_scores.min()) / (vector_scores.max() - vector_scores.min() + 1e-8)
         
         # 加权融合
-        hybrid_scores = alpha * bm25_norm + (1 - alpha) * dense_norm
+        hybrid_scores = alpha * bm25_norm + (1 - alpha) * vector_norm
         
         # 获取top-k结果
         top_indices = np.argsort(hybrid_scores)[-top_k:][::-1]
@@ -135,340 +126,355 @@ class HybridRetriever:
 documents = ["你的文档列表"]
 retriever = HybridRetriever(documents)
 results = retriever.retrieve("你的查询", top_k=3, alpha=0.3)
-\`\`\`
-
-**策略对比**：
-- **纯BM25**: 适合关键词匹配，对词汇重叠敏感
-- **纯稠密检索**: 适合语义匹配，能处理同义词
-- **混合检索**: 结合两者优势，效果最佳
-
-**调优建议**：
-1. 调整alpha参数（0.2-0.4通常效果较好）
-2. 对不同数据集进行A/B测试
-3. 考虑查询长度对策略的影响`,
-    resources: [
-      { name: 'HyDE Paper', url: 'https://arxiv.org/abs/2212.10496' },
-      { name: 'ColBERT Documentation', url: 'https://github.com/stanford-futuredata/ColBERT' }
+\`\`\``
     ],
-    tags: ['检索策略', 'BM25', '稠密检索', '混合检索']
+    bestPractices: [
+      "权重调优：通过实验确定BM25和向量检索的最佳权重组合",
+      "查询扩展：使用同义词、相关术语扩展原始查询",
+      "重排序：对初步检索结果进行二次排序以提高相关性",
+      "多路召回：结合多种检索策略确保高召回率"
+    ],
+    resources: [
+      { title: 'ColBERT论文', url: 'https://arxiv.org/abs/2004.12832', source: 'arXiv' },
+      { title: 'HyDE论文', url: 'https://arxiv.org/abs/2212.10496', source: 'arXiv' },
+      { title: 'LangChain检索文档', url: 'https://python.langchain.com/docs/modules/data_connection/retrievers/', source: 'LangChain' }
+    ]
   },
   {
     id: 'context-compression',
     title: '上下文压缩技术',
-    level: SkillLevel.Intermediate,
-    description: '学习如何压缩检索到的上下文，去除冗余信息，提高生成质量和效率。',
-    details: `## 上下文压缩实战
+    level: '进阶',
+    domain: 'rag-development',
+    description: '学习如何在保持关键信息的前提下压缩检索到的上下文，解决大语言模型输入长度限制问题。',
+    examples: [
+      `### 上下文压缩实现
 
-### 基于LLM的上下文压缩
-
-**LangChain实现**：
+**使用LLM进行摘要压缩**
 \`\`\`python
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import LLMChainExtractor
-from langchain.chat_models import ChatOpenAI
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
 
-# 初始化基础检索器
-base_retriever = vectorstore.as_retriever()
+# 压缩提示模板
+compression_template = """
+请将以下文本压缩为简洁的摘要，保留关键信息：
+原文：{context}
+摘要：
+"""
 
-# 初始化LLM
-llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
+prompt = PromptTemplate.from_template(compression_template)
+compression_chain = LLMChain(llm=your_llm, prompt=prompt)
 
-# 创建压缩器
-compressor = LLMChainExtractor.from_llm(llm)
-
-# 创建压缩检索器
-compression_retriever = ContextualCompressionRetriever(
-    base_compressor=compressor,
-    base_retriever=base_retriever
-)
-
-# 使用压缩检索器
-compressed_docs = compression_retriever.get_relevant_documents("你的查询")
-\`\`\`
-
-### 自定义压缩策略
-
-**基于重要性评分**：
-\`\`\`python
-def compress_context(documents, query, max_tokens=2000):
-    """基于重要性评分压缩上下文"""
-    # 计算每个文档与查询的相关性
-    scores = []
-    for doc in documents:
-        # 使用嵌入相似度或其他评分方法
-        score = calculate_relevance(doc, query)
-        scores.append((doc, score))
-    
-    # 按分数排序
-    scores.sort(key=lambda x: x[1], reverse=True)
-    
-    # 选择最重要的文档直到达到token限制
-    selected_docs = []
+# 压缩多个文档
+def compress_context(documents, max_tokens=1000):
+    compressed_docs = []
     total_tokens = 0
     
-    for doc, score in scores:
-        doc_tokens = count_tokens(doc)
-        if total_tokens + doc_tokens <= max_tokens:
-            selected_docs.append(doc)
-            total_tokens += doc_tokens
+    for doc in documents:
+        if total_tokens >= max_tokens:
+            break
+            
+        summary = compression_chain.run(context=doc)
+        compressed_docs.append(summary)
+        total_tokens += len(summary.split())
+    
+    return "\\n".join(compressed_docs)
+
+# 使用示例
+retrieved_docs = ["文档1内容", "文档2内容", ...]
+compressed_context = compress_context(retrieved_docs, max_tokens=800)
+\`\`\`
+
+**基于重要性的选择**
+\`\`\`python
+# 使用LLM评估每个句子的重要性
+importance_template = """
+请为以下句子打分（1-5分），分数越高表示对回答查询越重要：
+查询：{query}
+句子：{sentence}
+分数：
+"""
+
+importance_prompt = PromptTemplate.from_template(importance_template)
+importance_chain = LLMChain(llm=your_llm, prompt=importance_prompt)
+
+def select_important_sentences(documents, query, max_tokens=1000):
+    scored_sentences = []
+    
+    for doc in documents:
+        sentences = doc.split('.')
+        for sent in sentences:
+            if sent.strip():
+                score = importance_chain.run(query=query, sentence=sent.strip())
+                try:
+                    score = int(score.strip())
+                    scored_sentences.append((sent.strip(), score))
+                except:
+                    scored_sentences.append((sent.strip(), 3))  # 默认分数
+    
+    # 按分数排序并选择
+    scored_sentences.sort(key=lambda x: x[1], reverse=True)
+    
+    selected = []
+    total_tokens = 0
+    for sent, score in scored_sentences:
+        if total_tokens + len(sent.split()) <= max_tokens:
+            selected.append(sent)
+            total_tokens += len(sent.split())
         else:
             break
     
-    return selected_docs
-\`\`\`
-
-**压缩效果评估**：
-- Token减少：通常可减少30-50%的上下文长度
-- 生成质量：保持或略微提升回答准确性
-- 响应时间：显著减少（特别是对长上下文）
-
-**注意事项**：
-1. 避免过度压缩导致信息丢失
-2. 根据具体任务调整压缩策略
-3. 监控压缩后的生成质量`,
-    resources: [
-      { name: 'LangChain Contextual Compression', url: 'https://python.langchain.com/docs/modules/data_connection/retrievers/contextual_compression' },
-      { name: 'Context Compression Paper', url: 'https://arxiv.org/abs/2307.03172' }
+    return ". ".join(selected)
+\`\`\``
     ],
-    tags: ['上下文压缩', 'LLM', 'LangChain']
+    bestPractices: [
+      "保留关键实体：确保压缩后的文本包含所有重要的人名、地点、数字等",
+      "维持逻辑连贯：压缩后的文本应该保持语义连贯性",
+      "控制token数量：严格控制输出长度以适应LLM限制",
+      "验证信息完整性：确保压缩没有丢失关键信息"
+    ],
+    resources: [
+      { title: 'Contextual Compression论文', url: 'https://arxiv.org/abs/2304.14427', source: 'arXiv' },
+      { title: 'LangChain压缩文档', url: 'https://python.langchain.com/docs/modules/data_connection/document_compressors/', source: 'LangChain' },
+      { title: 'FLARE框架', url: 'https://arxiv.org/abs/2305.15473', source: 'arXiv' }
+    ]
   },
   {
     id: 'multi-source-retrieval',
-    title: '多源检索集成',
-    level: SkillLevel.Expert,
-    description: '整合多个数据源（数据库、API、文件系统）的检索结果，构建全面的RAG系统。',
-    details: `## 多源检索实战
+    title: '多源检索系统',
+    level: '专家',
+    domain: 'rag-development',
+    description: '构建能够从多个异构数据源（数据库、API、文件系统等）同时检索信息的复杂RAG系统。',
+    examples: [
+      `### 多源检索架构
 
-### 多源检索架构
-
-**系统设计**：
+**统一检索接口**
 \`\`\`python
-class MultiSourceRetriever:
-    def __init__(self):
-        self.sources = {
-            'database': DatabaseRetriever(),
-            'api': APIRetriever(), 
-            'files': FileRetriever(),
-            'web': WebRetriever()
-        }
-        self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any
+
+class DataSource(ABC):
+    @abstractmethod
+    def search(self, query: str, **kwargs) -> List[Dict[str, Any]]:
+        pass
+
+class DatabaseSource(DataSource):
+    def __init__(self, connection_string: str):
+        self.connection = create_connection(connection_string)
     
-    async def retrieve(self, query, top_k=10):
-        # 并行检索所有源
-        tasks = [
-            source.retrieve(query, top_k * 2) 
-            for source in self.sources.values()
-        ]
-        results = await asyncio.gather(*tasks)
+    def search(self, query: str, **kwargs) -> List[Dict[str, Any]]:
+        # SQL查询实现
+        sql_query = f"SELECT * FROM documents WHERE content LIKE '%{query}%'"
+        results = self.connection.execute(sql_query)
+        return [{"content": row.content, "source": "database", "score": 1.0} for row in results]
+
+class APISource(DataSource):
+    def __init__(self, api_endpoint: str, api_key: str):
+        self.endpoint = api_endpoint
+        self.headers = {"Authorization": f"Bearer {api_key}"}
+    
+    def search(self, query: str, **kwargs) -> List[Dict[str, Any]]:
+        response = requests.post(
+            self.endpoint, 
+            json={"query": query, "top_k": kwargs.get("top_k", 5)},
+            headers=self.headers
+        )
+        return [{"content": item["text"], "source": "api", "score": item["score"]} for item in response.json()]
+
+class FileSource(DataSource):
+    def __init__(self, file_paths: List[str]):
+        self.documents = []
+        for path in file_paths:
+            with open(path, 'r') as f:
+                self.documents.extend(f.read().split('\\n\\n'))
+    
+    def search(self, query: str, **kwargs) -> List[Dict[str, Any]]:
+        # 简单的关键词匹配
+        results = []
+        for doc in self.documents:
+            if query.lower() in doc.lower():
+                score = doc.lower().count(query.lower()) / len(doc.split())
+                results.append({"content": doc, "source": "file", "score": score})
+        return sorted(results, key=lambda x: x["score"], reverse=True)[:kwargs.get("top_k", 5)]
+
+# 统一检索器
+class MultiSourceRetriever:
+    def __init__(self, sources: List[DataSource]):
+        self.sources = sources
+    
+    def retrieve(self, query: str, **kwargs) -> List[Dict[str, Any]]:
+        all_results = []
+        for source in self.sources:
+            results = source.search(query, **kwargs)
+            all_results.extend(results)
         
-        # 合并结果
-        all_docs = []
-        for source_results in results:
-            all_docs.extend(source_results)
-        
-        # 重新排序
-        pairs = [(query, doc.content) for doc in all_docs]
-        scores = self.reranker.predict(pairs)
-        
-        # 按分数排序并返回top-k
-        scored_docs = list(zip(all_docs, scores))
-        scored_docs.sort(key=lambda x: x[1], reverse=True)
-        
-        return [doc for doc, score in scored_docs[:top_k]]
+        # 重新排序所有结果
+        return sorted(all_results, key=lambda x: x["score"], reverse=True)
 
 # 使用示例
-retriever = MultiSourceRetriever()
-results = await retriever.retrieve("最新的AI技术趋势")
-\`\`\`
+sources = [
+    DatabaseSource("postgresql://user:pass@localhost/mydb"),
+    APISource("https://api.example.com/search", "your-api-key"),
+    FileSource(["/data/docs1.txt", "/data/docs2.txt"])
+]
 
-### 数据源集成示例
-
-**数据库集成（PostgreSQL + pgvector）**：
-\`\`\`sql
--- 创建向量扩展
-CREATE EXTENSION IF NOT EXISTS vector;
-
--- 创建文档表
-CREATE TABLE documents (
-    id SERIAL PRIMARY KEY,
-    content TEXT,
-    metadata JSONB,
-    embedding VECTOR(1536)
-);
-
--- 向量相似度搜索
-SELECT content, metadata, 
-       embedding <-> $1 AS distance
-FROM documents 
-ORDER BY distance 
-LIMIT 5;
-\`\`\`
-
-**API集成（外部服务）**：
-\`\`\`python
-class APIRetriever:
-    def __init__(self, api_key):
-        self.api_key = api_key
-        self.base_url = "https://api.example.com/search"
-    
-    async def retrieve(self, query, limit=10):
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        params = {"q": query, "limit": limit}
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.get(self.base_url, 
-                                 headers=headers, 
-                                 params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return [Document(content=item['text'], 
-                                   metadata=item.get('metadata', {}))
-                           for item in data['results']]
-                return []
-\`\`\`
-
-**挑战与解决方案**：
-1. **数据一致性**：建立统一的数据格式和元数据标准
-2. **延迟优化**：实现异步并行检索和缓存机制  
-3. **质量控制**：为不同源设置可信度权重
-4. **错误处理**：优雅处理单个源的故障`,
-    resources: [
-      { name: 'Multi-Source RAG Survey', url: 'https://arxiv.org/abs/2312.10997' },
-      { name: 'pgvector Documentation', url: 'https://github.com/pgvector/pgvector' }
+retriever = MultiSourceRetriever(sources)
+results = retriever.retrieve("你的查询", top_k=10)
+\`\`\``
     ],
-    tags: ['多源检索', '数据库', 'API集成', '系统架构']
+    bestPractices: [
+      "标准化输出格式：确保所有数据源返回统一的数据结构",
+      "异步检索：并行执行多个数据源的查询以提高效率",
+      "结果融合：设计合理的算法融合来自不同源的结果",
+      "错误处理：优雅处理某个数据源不可用的情况",
+      "缓存策略：缓存频繁查询的结果以减少重复请求"
+    ],
+    resources: [
+      { title: 'Multi-hop QA论文', url: 'https://arxiv.org/abs/1911.10484', source: 'arXiv' },
+      { title: 'Haystack框架', url: 'https://haystack.deepset.ai/', source: 'deepset' },
+      { title: 'LlamaIndex多源文档', url: 'https://docs.llamaindex.ai/en/stable/module_guides/loading/', source: 'LlamaIndex' }
+    ]
   },
   {
     id: 'evaluation-metrics',
     title: 'RAG评估指标',
-    level: SkillLevel.Expert,
-    description: '掌握RAG系统的评估方法，包括召回率、精确率、忠实度、相关性等关键指标。',
-    details: `## RAG评估指标实战
+    level: '专家',
+    domain: 'rag-development',
+    description: '掌握RAG系统的全面评估方法，包括检索质量、生成质量、端到端性能等多个维度的指标。',
+    examples: [
+      `### RAG评估实现
 
-### 核心评估指标
-
-**1. 检索阶段指标**
+**综合评估框架**
 \`\`\`python
-from sklearn.metrics import recall_score, precision_score
+from typing import List, Dict, Any
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
-def evaluate_retrieval(retrieved_docs, relevant_docs, k=5):
-    """评估检索阶段性能"""
-    # 转换为二进制标签
-    retrieved_set = set(retrieved_docs[:k])
-    relevant_set = set(relevant_docs)
-    all_docs = list(retrieved_set | relevant_set)
-    
-    y_true = [1 if doc in relevant_set else 0 for doc in all_docs]
-    y_pred = [1 if doc in retrieved_set else 0 for doc in all_docs]
-    
-    recall = recall_score(y_true, y_pred, zero_division=0)
-    precision = precision_score(y_true, y_pred, zero_division=0)
-    f1 = 2 * (precision * recall) / (precision + recall + 1e-8)
-    
-    return {
-        'recall@{}'.format(k): recall,
-        'precision@{}'.format(k): precision,
-        'f1@{}'.format(k): f1
-    }
-\`\`\`
-
-**2. 生成阶段指标**
-
-**忠实度评估（Faithfulness）**：
-\`\`\`python
-def evaluate_faithfulness(answer, retrieved_contexts):
-    """评估生成答案是否忠实于检索到的上下文"""
-    # 使用NLI模型判断蕴含关系
-    from transformers import pipeline
-    nli_pipeline = pipeline("text-classification", 
-                           model="facebook/bart-large-mnli")
-    
-    scores = []
-    for context in retrieved_contexts:
-        result = nli_pipeline(f"{context} </s></s> {answer}")
-        entailment_score = next(r['score'] for r in result 
-                              if r['label'] == 'ENTAILMENT')
-        scores.append(entailment_score)
-    
-    return np.mean(scores)
-\`\`\`
-
-**相关性评估（Relevance）**：
-\`\`\`python
-def evaluate_relevance(question, answer):
-    """评估答案与问题的相关性"""
-    # 使用BERTScore或其他相关性指标
-    from bert_score import score
-    P, R, F1 = score([answer], [question], lang="zh")
-    return F1.item()
-\`\`\`
-
-### 端到端评估框架
-
-**使用RAGAS库**：
-\`\`\`python
-from ragas import evaluate
-from ragas.metrics import (
-    faithfulness, 
-    answer_relevancy, 
-    context_recall, 
-    context_precision
-)
-
-# 准备测试数据
-test_data = {
-    "question": ["什么是RAG？"],
-    "ground_truth": ["RAG是检索增强生成..."],
-    "answer": ["RAG结合检索和生成..."],
-    "contexts": [["RAG相关文档1", "RAG相关文档2"]]
-}
-
-# 执行评估
-result = evaluate(
-    test_data,
-    metrics=[faithfulness, answer_relevancy, 
-             context_recall, context_precision]
-)
-
-print(result)
-\`\`\`
-
-**自定义评估流水线**：
-\`\`\`python
 class RAGEvaluator:
-    def __init__(self):
-        self.metrics = {
-            'faithfulness': self._faithfulness,
-            'relevancy': self._relevancy,
-            'context_utilization': self._context_utilization
+    def __init__(self, embedding_model):
+        self.embedding_model = embedding_model
+    
+    def evaluate_retrieval(self, query: str, retrieved_docs: List[str], relevant_docs: List[str]) -> Dict[str, float]:
+        """评估检索质量"""
+        # 计算召回率和精确率
+        retrieved_set = set(retrieved_docs)
+        relevant_set = set(relevant_docs)
+        
+        if len(retrieved_set) == 0:
+            precision = 0.0
+        else:
+            precision = len(retrieved_set & relevant_set) / len(retrieved_set)
+        
+        if len(relevant_set) == 0:
+            recall = 0.0
+        else:
+            recall = len(retrieved_set & relevant_set) / len(relevant_set)
+        
+        # F1分数
+        if precision + recall == 0:
+            f1 = 0.0
+        else:
+            f1 = 2 * (precision * recall) / (precision + recall)
+        
+        # MRR (Mean Reciprocal Rank)
+        mrr = 0.0
+        for i, doc in enumerate(retrieved_docs):
+            if doc in relevant_docs:
+                mrr = 1.0 / (i + 1)
+                break
+        
+        return {
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "mrr": mrr
         }
     
-    def evaluate(self, questions, answers, contexts, ground_truths=None):
-        results = {}
-        for metric_name, metric_func in self.metrics.items():
-            scores = []
-            for i in range(len(questions)):
-                score = metric_func(
-                    questions[i], 
-                    answers[i], 
-                    contexts[i],
-                    ground_truths[i] if ground_truths else None
-                )
-                scores.append(score)
-            results[metric_name] = np.mean(scores)
-        return results
-\`\`\`
+    def evaluate_generation(self, generated_answer: str, reference_answers: List[str]) -> Dict[str, float]:
+        """评估生成质量"""
+        # ROUGE分数（简化版）
+        def calculate_rouge_l(candidate, references):
+            # 这里应该是完整的ROUGE-L实现
+            # 简化为字符级别的F1
+            candidate_chars = set(candidate.lower())
+            reference_chars = set(" ".join(references).lower())
+            
+            if len(candidate_chars) == 0:
+                precision = 0.0
+            else:
+                precision = len(candidate_chars & reference_chars) / len(candidate_chars)
+            
+            if len(reference_chars) == 0:
+                recall = 0.0
+            else:
+                recall = len(candidate_chars & reference_chars) / len(reference_chars)
+            
+            if precision + recall == 0:
+                f1 = 0.0
+            else:
+                f1 = 2 * (precision * recall) / (precision + recall)
+            
+            return f1
+        
+        rouge_l = calculate_rouge_l(generated_answer, reference_answers)
+        
+        # 语义相似度
+        gen_embedding = self.embedding_model.encode([generated_answer])
+        ref_embeddings = self.embedding_model.encode(reference_answers)
+        semantic_sim = np.mean([
+            cosine_similarity(gen_embedding, ref_emb.reshape(1, -1))[0][0] 
+            for ref_emb in ref_embeddings
+        ])
+        
+        return {
+            "rouge_l": rouge_l,
+            "semantic_similarity": semantic_sim
+        }
+    
+    def evaluate_end_to_end(self, query: str, generated_answer: str, ground_truth: str, 
+                           retrieved_docs: List[str], relevant_docs: List[str]) -> Dict[str, float]:
+        """端到端评估"""
+        retrieval_metrics = self.evaluate_retrieval(query, retrieved_docs, relevant_docs)
+        generation_metrics = self.evaluate_generation(generated_answer, [ground_truth])
+        
+        # 综合分数
+        overall_score = (
+            0.4 * retrieval_metrics["f1"] + 
+            0.4 * generation_metrics["rouge_l"] + 
+            0.2 * generation_metrics["semantic_similarity"]
+        )
+        
+        return {
+            **retrieval_metrics,
+            **generation_metrics,
+            "overall_score": overall_score
+        }
 
-**评估最佳实践**：
-1. **多维度评估**：同时考虑检索和生成质量
-2. **人工评估**：定期进行人工审核验证自动指标
-3. **A/B测试**：比较不同配置的实际效果
-4. **监控漂移**：持续监控指标变化趋势`,
-    resources: [
-      { name: 'RAGAS Documentation', url: 'https://docs.ragas.io/' },
-      { name: 'RAG Evaluation Survey', url: 'https://arxiv.org/abs/2310.19746' },
-      { name: 'BERTScore GitHub', url: 'https://github.com/Tiiiger/bert_score' }
+# 使用示例
+evaluator = RAGEvaluator(SentenceTransformer('all-MiniLM-L6-v2'))
+
+# 评估单个查询
+metrics = evaluator.evaluate_end_to_end(
+    query="什么是机器学习？",
+    generated_answer="机器学习是...",
+    ground_truth="机器学习是...",
+    retrieved_docs=["文档1", "文档2"],
+    relevant_docs=["文档1", "文档3"]
+)
+print(metrics)
+\`\`\`
+`
     ],
-    tags: ['评估指标', 'RAGAS', '忠实度', '相关性']
+    bestPractices: [
+      "多维度评估：不要只依赖单一指标，要综合考虑多个方面",
+      "人工评估：自动化指标无法完全替代人工判断，特别是对于复杂任务",
+      "基准测试：建立标准测试集用于持续监控系统性能",
+      "A/B测试：在线上环境中进行A/B测试验证改进效果",
+      "用户反馈：收集真实用户反馈作为重要的评估信号"
+    ],
+    resources: [
+      { title: 'RAGAS评估框架', url: 'https://github.com/explodinggradients/ragas', source: 'GitHub' },
+      { title: 'TruLens评估平台', url: 'https://www.trulens.org/trulens/', source: 'TruLens' },
+      { title: 'ARIZE Phoenix', url: 'https://docs.arize.com/phoenix', source: 'Arize' }
+    ]
   }
 ];

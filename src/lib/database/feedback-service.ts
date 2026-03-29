@@ -19,11 +19,11 @@ export async function saveFeedback(feedbackData: any): Promise<string> {
   
   // 发送邮件通知（如果配置了邮件服务）
   try {
-    const { sendEmail } = await import('../email-service');
-    await sendEmail({
-      to: 'jx_zfl@126.com',
-      subject: `新反馈提交 - ${feedbackId}`,
-      text: `新反馈内容：${feedbackData.feedback}\n邮箱：${feedbackData.email || '未提供'}\n时间：${feedback.createdAt}`
+    const { sendFeedbackEmail } = await import('../email-service');
+    await sendFeedbackEmail({
+      feedback: feedbackData.feedback,
+      email: feedbackData.email,
+      createdAt: new Date(feedback.createdAt)
     });
   } catch (emailError) {
     console.warn('邮件发送失败，但反馈已保存:', emailError);
