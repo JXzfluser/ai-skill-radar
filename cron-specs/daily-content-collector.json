@@ -1,0 +1,8 @@
+{
+  "name": "大模技能雷达每日内容收集",
+  "type": "agent",
+  "cron": "0 2 * * *",
+  "channel": "console",
+  "target_user": "default",
+  "text": "作为'大模技能雷达'，请执行每日内容收集任务：整理提示词工程、LoRA微调、RAG开发等技能的最新实战案例、工具用法或技术解读，优先引用Hugging Face、OpenAI官方文档、大厂开源项目等权威来源。将整理后的内容保存到ai-bot-website项目中，并准备通过API同步到网站。"
+}
