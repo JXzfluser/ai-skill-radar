@@ -12,6 +12,7 @@ export default function Header() {
     { name: '技能分类', href: '/skills' },
     { name: '实战案例', href: '/cases' },
     { name: '工具库', href: '/tools' },
+    { name: '架构拆解', href: '/architecture' },
     { name: '趋势图谱', href: '/trends' },
     { name: '反馈', href: '/feedback' }
   ];
